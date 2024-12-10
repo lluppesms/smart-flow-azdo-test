@@ -1,0 +1,27 @@
+# ----------------------------------------------------------------------------------------------------
+# Variables common to all environments
+# ----------------------------------------------------------------------------------------------------
+variables:
+  # - name: appName   (moved to variable group, or you can put it here if you prefer)
+  #   value: 'this is unique to you - define in a variable group or on the pipeline variables!'
+  # - name: appPrefix (moved to variable group, or you can put it here if you prefer)
+  #   value: 'this is unique to you - define in a variable group or on the pipeline variables!'
+
+  - name: location
+    value: "westus"
+
+  - name: workingDirectoryInfra
+    value: "/infra/bicep"
+  - name: workingDirectoryIgnore
+    value: "/docs"
+
+  # - name: functionAppSku
+  #   value: 'Y1'
+  # - name: functionAppSkuFamily
+  #   value: 'Y'
+  # - name: functionAppSkuTier
+  #   value: 'Dynamic'
+  # - name: functionKind
+  #   value: 'functionapp,linux'
+  # - name: functionStorageSku
+  #   value: 'Standard_LRS'

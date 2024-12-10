@@ -1,0 +1,27 @@
+# ----------------------------------------------------------------------------------------------------
+# Variables for location of source for application
+# ----------------------------------------------------------------------------------------------------
+variables:
+  - name: uiAppFolder
+    value: "app/Assistant.Hub.Api"
+  - name: apiAppFolder
+    value: "api_python"
+
+  # - name: sourceVariableFile
+  #   value: 'app'
+  # - name: functionAppFolderName
+  #   value: 'src/Function.Net8'
+  # - name: functionAppSolutionName
+  #   value: 'Function.Net8'
+  # - name: functionAppProjectFolderName
+  #   value: 'src/Function.Net8'
+  # - name: functionAppProjectExtension
+  #   value: 'csproj'
+  # - name: exeName
+  #   value: 'Function.NET8'
+  # - name: appProjectExtension
+  #   value: 'csproj'
+  # - name: buildPlatform
+  #   value: 'Any CPU'
+  # - name: buildConfiguration
+  #   value: 'Release'
