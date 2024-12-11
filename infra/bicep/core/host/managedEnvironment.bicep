@@ -6,7 +6,7 @@ param tags object = {}
 // Reference Resource params
 param logAnalyticsWorkspaceName string
 param logAnalyticsRgName string
-param appSubnetId string
+param appSubnetId string = ''
 
 // --------------------------------------------------------------------------------------------------------------
 var useExistingEnvironment = !empty(existingEnvironmentName)
@@ -38,10 +38,10 @@ resource newAppEnvironmentResource 'Microsoft.App/managedEnvironments@2024-03-01
         sharedKey: logAnalyticsKey
       }
     }
-    vnetConfiguration: {
+    vnetConfiguration: !empty(appSubnetId) ? {
       infrastructureSubnetId: appSubnetId
       internal: true
-    }
+    } : {}
   }
 }
 

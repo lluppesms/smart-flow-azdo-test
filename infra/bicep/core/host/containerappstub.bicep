@@ -1,3 +1,4 @@
+@maxLength(32)
 param appName string
 param managedEnvironmentName string
 param managedEnvironmentRg string
@@ -11,7 +12,7 @@ param targetPort int = 80
 param location string = resourceGroup().location
 param tags object = {}
 
-@description('The secrets required for the container')
+@description('The secrets required for the container, with the key being the secret name and the value being the key vault URL')
 @secure()
 param secrets object = {}
 
@@ -45,10 +46,12 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
     configuration: {
       ingress: {
         targetPort: targetPort
+        external: true
       }
       secrets: [for secret in items(secrets): {
         name: secret.key
-        value: secret.value
+        identity: userIdentity.id
+        keyVaultUrl: secret.value
       }]
       registries: [
         {
@@ -80,11 +83,11 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
             {
               type: 'readiness'
               httpGet: {
-                path: '/health'
+                path: '/ready'
                 port: targetPort
               }
               initialDelaySeconds: 3
-              periodSeconds: 5
+              periodSeconds: 10
             }
             {
               type: 'liveness'
@@ -93,7 +96,7 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
                 port: targetPort
               }
               initialDelaySeconds: 7
-              periodSeconds: 5
+              periodSeconds: 10
             }
           ]
         }

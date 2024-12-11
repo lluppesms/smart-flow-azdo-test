@@ -1,21 +1,40 @@
-param name string
+@description('The name of the private endpoint to create')
+param privateEndpointName string
+
+@description('The region where the private endpoint will be created')
 param location string = resourceGroup().location
+
+@description('The ID of the subnet where the private endpoint will be created')
 param subnetId string
-param privateLinkServiceId string
+
+@description('The ID of the resource to which the private endpoint will be connected')
+param targetResourceId string
+
+@description('An array of group IDs of the service type that they private endpoint will be connect to')
 param groupIds array
 
-resource privateEndpoint 'Microsoft.Network/privateEndpoints@2021-02-01' = {
-  name: name
+@description('The resource ID of the private DNS zone for this resource')
+param dnsZoneId string = ''
+
+@description('The tags to associate with the private endpoint')
+param tags object = {}
+
+var nicName = '${privateEndpointName}-nic'
+
+resource pe 'Microsoft.Network/privateEndpoints@2023-06-01' = {
+  name: privateEndpointName
   location: location
+  tags: tags
   properties: {
+    customNetworkInterfaceName: nicName
     subnet: {
       id: subnetId
     }
     privateLinkServiceConnections: [
       {
-        name: name
+        name: privateEndpointName
         properties: {
-          privateLinkServiceId: privateLinkServiceId
+          privateLinkServiceId: targetResourceId
           groupIds: groupIds
         }
       }
@@ -23,4 +42,19 @@ resource privateEndpoint 'Microsoft.Network/privateEndpoints@2021-02-01' = {
   }
 }
 
-output privateEndpointId string = privateEndpoint.id
+resource peDnsGroup 'Microsoft.Network/privateEndpoints/privateDnsZoneGroups@2023-06-01' = if (dnsZoneId != '') {
+  name: '${privateEndpointName}-dns-group'
+  parent: pe
+  properties: {
+    privateDnsZoneConfigs: [
+      {
+        name: 'default'
+        properties: {
+          privateDnsZoneId: dnsZoneId
+        }
+      }
+    ]
+  }
+}
+
+output privateEndpointId string = pe.id

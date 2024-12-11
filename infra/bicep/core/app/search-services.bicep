@@ -54,9 +54,9 @@ module privateEndpoint '../connectivity/private-endpoint.bicep' =
   if (!empty(privateEndpointSubnetId)) {
     name: '${name}-private-endpoint'
     params: {
-      name: privateEndpointName
+      privateEndpointName: privateEndpointName
       groupIds: ['searchService']
-      privateLinkServiceId: search.id
+      targetResourceId: search.id
       subnetId: privateEndpointSubnetId
     }
   }

@@ -61,9 +61,9 @@ resource azureMonitorPrivateLinkScope 'Microsoft.Insights/privateLinkScopes@2021
 module azureMonitorPrivateLinkScopePrivateEndpoint '../connectivity/private-endpoint.bicep' = if (!empty(privateEndpointSubnetId)) {
   name: 'azure-monitor-private-link-scope-private-endpoint'
   params: {
-    name: privateEndpointName
+    privateEndpointName: privateEndpointName
     groupIds: ['azuremonitor']
-    privateLinkServiceId: azureMonitorPrivateLinkScope.id
+    targetResourceId: azureMonitorPrivateLinkScope.id
     subnetId: privateEndpointSubnetId
   }
 }
@@ -72,3 +72,4 @@ output applicationInsightsId string = useExistingAppInsights ? existingApplicati
 output applicationInsightsName string = useExistingAppInsights ? existingApplicationInsightsResource.name : newApplicationInsightsResource.name
 output logAnalyticsWorkspaceId string = useExistingLogAnalytics ? existingLogAnalyticsResource.id : newLogAnalyticsResource.id
 output logAnalyticsWorkspaceName string = useExistingLogAnalytics ? existingLogAnalyticsResource.name : newLogAnalyticsResource.name
+output appInsightsConnectionString string = useExistingAppInsights ? existingApplicationInsightsResource.properties.ConnectionString : newApplicationInsightsResource.properties.ConnectionString

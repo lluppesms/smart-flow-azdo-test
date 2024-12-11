@@ -111,9 +111,9 @@ module privateEndpoint '../connectivity/private-endpoint.bicep' =
   if (!empty(privateEndpointSubnetId)) {
     name: '${accountName}-private-endpoint'
     params: {
-      name: privateEndpointName
+      privateEndpointName: privateEndpointName
       groupIds: ['Sql']
-      privateLinkServiceId: cosmosAccount.id
+      targetResourceId: cosmosAccount.id
       subnetId: privateEndpointSubnetId
     }
   }

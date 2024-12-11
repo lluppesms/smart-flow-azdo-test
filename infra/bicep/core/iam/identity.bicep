@@ -2,13 +2,13 @@ param identityName string
 param location string
 param tags object = {}
 
-resource userIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' = {
+resource identity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-07-31-preview' = {
   name: identityName
   location: location
   tags: tags
 }
 
-output id string = userIdentity.id
-output identityName string = userIdentity.name
-output identityClientId string = userIdentity.properties.clientId
-output identityPrincipalId string = userIdentity.properties.principalId
+output managedIdentityId string = identity.id
+output managedIdentityName string = identity.name
+output managedIdentityClientId string = identity.properties.clientId
+output managedIdentityPrincipalId string = identity.properties.principalId

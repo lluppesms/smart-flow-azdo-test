@@ -15,5 +15,8 @@
   },
   "openai": {
     "cognitiveServicesOpenAIContributorRoleId": "a001fd3d-188f-4b5d-821b-7da978bf7442"
+  },
+  "containerregistry": {
+    "acrPullRoleId": "7f951dda-4ed3-4680-a7ca-43fe172d538d"
   }
 }

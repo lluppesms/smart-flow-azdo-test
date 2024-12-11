@@ -8,7 +8,7 @@ param location string = resourceGroup().location
 param utcValue string = utcNow()
 param userManagedIdentityId string = ''
 
-resource getKeyVaultSecretNames 'Microsoft.Resources/deploymentScripts@2020-10-01' = {
+resource getKeyVaultSecretNames 'Microsoft.Resources/deploymentScripts@2023-08-01' = {
   name: 'getKeyVaultSecretNameList'
   location: location
   kind: 'AzurePowerShell'

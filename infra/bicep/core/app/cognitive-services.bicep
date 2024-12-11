@@ -1,5 +1,5 @@
 param existingCogServicesName string
-param existingCogServicesResourceGroup string
+param existingCogServicesResourceGroupName string
 param name string
 param location string = resourceGroup().location
 param tags object = {}
@@ -64,7 +64,7 @@ var deployments = [
 // --------------------------------------------------------------------------------------------------------------
 resource existingAccount 'Microsoft.CognitiveServices/accounts@2023-05-01' existing =
   if (!empty(existingCogServicesName)) {
-    scope: resourceGroup(existingCogServicesResourceGroup)
+    scope: resourceGroup(existingCogServicesResourceGroupName)
     name: existingCogServicesName
   }
 
@@ -120,9 +120,9 @@ module privateEndpoint '../connectivity/private-endpoint.bicep' =
   if (!empty(existingCogServicesName) && !empty(privateEndpointSubnetId)) {
     name: '${name}-private-endpoint'
     params: {
-      name: privateEndpointName
+      privateEndpointName: privateEndpointName
       groupIds: ['account']
-      privateLinkServiceId: account.id
+      targetResourceId: account.id
       subnetId: privateEndpointSubnetId
     }
   }
@@ -132,5 +132,5 @@ output endpoint string = !empty(existingCogServicesName)
   : account.properties.endpoint
 output id string = !empty(existingCogServicesName) ? existingAccount.id : account.id
 output name string = !empty(existingCogServicesName) ? existingAccount.name : account.name
-output resourceGroupName string = !empty(existingCogServicesName) ? existingCogServicesResourceGroup : resourceGroupName
+output resourceGroupName string = !empty(existingCogServicesName) ? existingCogServicesResourceGroupName : resourceGroupName
 output keyVaultSecretName string = cognitiveServicesKeySecretName

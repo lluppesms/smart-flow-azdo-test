@@ -3,16 +3,15 @@
 // --------------------------------------------------------------------------------------------------------------
 // You can test it with these commands:
 //   Most basic of test commands:
-//     az deployment sub create -n manual --location EastUS --template-file 'main-complete.bicep' --parameters applicationName=myApp environmentName=dev
+//     az deployment group create -n manual --resource-group rg_smart_flow_test --template-file 'main-complete.bicep' --parameters environmentName=dev applicationName=myApp
 //   Deploy with existing resources specified in a parameter file:
-//     az deployment sub create -n manual --location EastUS --template-file 'main-complete.bicep' --parameters main-complete-existing.bicepparam
+//     az deployment group create -n manual --resource-group rg_smart_flow_test --template-file 'main-complete.bicep' --parameters main-complete-existing.bicepparam
 // --------------------------------------------------------------------------------------------------------------
-targetScope = 'subscription'
 
 // you can supply a full application name, or you don't it will append resource tokens to a default suffix
 @description('Full Application Name (supply this or use default of prefix+token)')
 param applicationName string = ''
-@description('If you skip Application Name, this prefix will be combined with a token to create the applicationName')
+@description('If you do not supply Application Name, this prefix will be combined with a token to create a unique applicationName')
 param applicationPrefix string = 'ai_doc'
 
 @description('The environment code (i.e. dev, qa, prod)')
@@ -28,14 +27,6 @@ param principalId string = ''
 
 @description('Should internal resources use managed identity for access?')
 param useManagedIdentityResourceAccess bool = true
-
-// --------------------------------------------------------------------------------------------------------------
-// Existing resource groups?
-// --------------------------------------------------------------------------------------------------------------
-@description('If you provide this the application resources will be created here instead of creating a new RG')
-param existingRG_App_Name string = ''
-@description('If you provide this the network resources will be created here instead of creating a new RG')
-param existingRG_Connectivity_Name string = ''
 
 // --------------------------------------------------------------------------------------------------------------
 // Existing networks?
@@ -58,7 +49,9 @@ param subnet2Prefix string = '10.2.2.0/23'
 // --------------------------------------------------------------------------------------------------------------
 @description('If you provide this is will be used instead of creating a new Registry')
 param existing_ACR_Name string = ''
-@description('For a new Registry, this is the Registry SKU')
+@description('If you provide this is will be used instead of creating a new Registry')
+param existing_ACR_ResourceGroupName string = ''
+@description('For a new Container Registry, this is the SKU')
 param ACR_Sku string = 'Basic'
 
 // --------------------------------------------------------------------------------------------------------------
@@ -81,36 +74,7 @@ param existing_managedAppEnvName string = ''
 @description('Name of an existing Cognitive Services account to use')
 param existingCogServicesName string = ''
 @description('Name of ResourceGroup for an existing Cognitive Services account to use')
-param existingCogServicesResourceGroup string = ''
-
-@description('Text embedding deployment name. Default: text-embedding')
-param aOAIChatGpt_TextEmbedding_DeploymentName string = 'text-embedding'
-@description('Text embedding model. Default: text-embedding-ada-002')
-param aOAIChatGpt_TextEmbedding_ModelName string = 'text-embedding-ada-002'
-@description('Text embedding version: Default 2')
-param aOAIChatGpt_TextEmbedding_ModelVersion string = '2'
-@description('Text embedding deployment capacity. Default: 10')
-param aOAIChatGpt_TextEmbedding_DeploymentCapacity int = 30
-
-@description('Standard chat GPT deployment name. Default: gpt-35-turbo')
-param aOAIChatGpt_Standard_DeploymentName string = 'gpt-35-turbo'
-@description('Standard chat GPT model. Default: gpt-35-turbo')
-@allowed(['gpt-35-turbo', 'gpt-4', 'gpt-35-turbo-16k', 'gpt-4-16k', 'gpt-4o'])
-param aOAIChatGpt_Standard_ModelName string = 'gpt-35-turbo'
-@description('Standard chat GPT version: Default 0125')
-param aOAIChatGpt_Standard_ModelVersion string = '0125'
-@description('Standard chat GPT deployment capacity. Default: 10')
-param aOAIChatGpt_Standard_DeploymentCapacity int = 10
-
-@description('Premium chat GPT deployment name. Default: gpt-4o')
-param aOAIChatGpt_Premium_DeploymentName string = 'gpt-4o'
-@description('Premium chat GPT model. Default: gpt-4o')
-@allowed(['gpt-35-turbo', 'gpt-4', 'gpt-35-turbo-16k', 'gpt-4-16k', 'gpt-4o'])
-param aOAIChatGpt_Premium_ModelName string = 'gpt-4o'
-@description('Premium chat GPT version: Default 2024-05-13')
-param aOAIChatGpt_Premium_ModelVersion string = '2024-05-13'
-@description('Premium chat GPT deployment capacity. Default: 10')
-param aOAIChatGpt_Premium_DeploymentCapacity int = 10
+param existingCogServicesResourceGroupName string = ''
 
 // --------------------------------------------------------------------------------------------------------------
 // Deploy Cosmos Database?
@@ -130,9 +94,10 @@ param append_Resource_Token bool = false
 param runDateTime string = utcNow()
 
 // --------------------------------------------------------------------------------------------------------------
-// Variables
+// -- Variables -------------------------------------------------------------------------------------------------
 // --------------------------------------------------------------------------------------------------------------
 var resourceToken = toLower(uniqueString(subscription().id, location))
+var resourceGroupName = resourceGroup().name
 
 // if user supplied a full application name, use that, otherwise use default prefix and a unique token
 var appName = applicationName != '' ? applicationName : '${applicationPrefix}_${resourceToken}'
@@ -150,34 +115,11 @@ var commonTags = {
 }
 var tags = union(commonTags, azdTag)
 
-var resourceAbbreviations = loadJsonContent('./data/abbreviation.json')
-var rg_App_Name = !empty(existingRG_App_Name) ? existingRG_App_Name : '${resourceAbbreviations.resourcesResourceGroups}_${appName}_${environmentName}'
-var rg_Connectivity_Name = !empty(existingRG_Connectivity_Name) ? existingRG_Connectivity_Name : rg_App_Name
-
-var createConnectivityRG = (rg_App_Name != rg_Connectivity_Name)
-
-var existingCogServicesRG = existingCogServicesResourceGroup == '' ? rg_App_Name : existingCogServicesResourceGroup
-
-// --------------------------------------------------------------------------------------------------------------
-// -- Create Resource Groups ------------------------------------------------------------------------------------
-// --------------------------------------------------------------------------------------------------------------
-resource rg_app 'Microsoft.Resources/resourceGroups@2024-07-01' = {
-  name: rg_App_Name
-  location: location
-  tags: tags
-}
-resource rg_connectivity_new 'Microsoft.Resources/resourceGroups@2024-07-01' = if (createConnectivityRG) {
-  name: rg_Connectivity_Name
-  location: location
-  tags: tags
-}
-
 // --------------------------------------------------------------------------------------------------------------
 // -- Generate Resource Names -----------------------------------------------------------------------------------
 // --------------------------------------------------------------------------------------------------------------
 module resourceNames 'resourcenames.bicep' = {
-  name: 'names${deploymentSuffix}'
-  scope:  resourceGroup(rg_app.name)
+  name: 'resource-names${deploymentSuffix}'
   params: {
     applicationName: appName
     environmentName: environmentName
@@ -190,8 +132,6 @@ module resourceNames 'resourcenames.bicep' = {
 // --------------------------------------------------------------------------------------------------------------
 module vnet './core/connectivity/vnet.bicep' = {
   name: 'vnet${deploymentSuffix}'
-  // scope: createConnectivityRG ? resourceGroup(rg_connectivity_new.name) : resourceGroup(rg_app.name)
-  scope: resourceGroup(rg_app.name)
   params: {
     existingVirtualNetworkName: existingVnetName
     newVirtualNetworkName: resourceNames.outputs.vnet_Name
@@ -207,10 +147,10 @@ module vnet './core/connectivity/vnet.bicep' = {
 // -- Container Registry ----------------------------------------------------------------------------------------
 // --------------------------------------------------------------------------------------------------------------
 module containerRegistry './core/host/containerregistry.bicep' =  {
-  name: 'cnt-reg${deploymentSuffix}'
-  scope: resourceGroup(rg_app.name)
+  name: 'containerregistry${deploymentSuffix}'
   params: {
     existingRegistryName: existing_ACR_Name
+    existing_ACR_ResourceGroupName: existing_ACR_ResourceGroupName
     newRegistryName: resourceNames.outputs.ACR_Name
     location: location
     acrSku: ACR_Sku
@@ -223,7 +163,6 @@ module containerRegistry './core/host/containerregistry.bicep' =  {
 // --------------------------------------------------------------------------------------------------------------
 module logAnalytics './core/monitor/loganalytics.bicep' = {
   name: 'law${deploymentSuffix}'
-  scope: resourceGroup(rg_app.name)
   params: {
     existingLogAnalyticsName: existing_LogAnalytics_Name
     newLogAnalyticsName: resourceNames.outputs.logAnalyticsWorkspaceName
@@ -238,18 +177,23 @@ module logAnalytics './core/monitor/loganalytics.bicep' = {
 // -- Key Vault Resources ---------------------------------------------------------------------------------------
 // --------------------------------------------------------------------------------------------------------------
 
-module identity './core/host/identity.bicep' = {
-  name: 'userassigned-identity-${deploymentSuffix}'
-  scope: rg_app
+module identity './core/iam/identity.bicep' = {
+  name: 'app-identity${deploymentSuffix}'
+  params: {
+    identityName: resourceNames.outputs.userAssignedIdentityName
+    location: location
+  }
+}
+module identityAcrRights './core/host/containerregistry-access.bicep' = {
+  name: 'containerregistry-access${deploymentSuffix}'
   params: {
     registryName: containerRegistry.name
-    userAssignedIdentityName: 'userassigned-identity-${appName}'
+    identityPrincipalId: identity.outputs.managedIdentityPrincipalId
   }
 }
 
 module keyVault './core/security/keyvault.bicep' = {
   name: 'keyvault${deploymentSuffix}'
-  scope: resourceGroup(rg_app.name)
   params: {
     location: location
     commonTags: tags
